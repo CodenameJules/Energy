@@ -193,45 +193,67 @@ plt.tight_layout()
 plt.show()
 
 
-# London Pivot Table for LCT mixes
-
+# Aggregate by official authority code, borough name, and technology.
+# Keeping the code here gives us a reliable key for later merges.
 london_summary = (
-    london_lct.groupby(["local_authority", "Type"])["LCT Connections"]
+    london_lct.groupby(
+        [
+            "local_authority_code",
+            "local_authority",
+            "Type",
+        ]
+    )["LCT Connections"]
     .sum()
-    .reset_index()  # Groupby turns columns into indexes, and this resets it into columns and pivot_table() uses column names
+    .reset_index()
 )
-london_pivot = london_summary.pivot_table(
-    index="local_authority", columns="Type", values="LCT Connections", fill_value=0
+
+# Reshape into one row per borough and one column per technology.
+london_tech = london_summary.pivot_table(
+    index=[
+        "local_authority_code",
+        "local_authority",
+    ],
+    columns="Type",
+    values="LCT Connections",
+    fill_value=0,
 )
-print("Tech Mixes across London Boroughs")
-print(london_pivot)
 
-# Add a 'total' column
-london_pivot["Total"] = london_pivot.sum(
-    axis=1
-)  # axis 0 = go down by row, axis 1 = go across columns
 
-print(london_pivot.sort_values("Total", ascending=False))
+# Rank boroughs by total recorded LCT connections without adding
+# a non-technology column to the technology table.
+london_totals = (
+    london_tech.sum(axis=1)
+    .sort_values(ascending=False)
+)
 
-# Top 10 Boroughs
-top10_london = london_pivot.sort_values("Total", ascending=False).head(10)
-print("London borough with most LCT connections")
-print(top10_london)
+top10_london_index = london_totals.head(10).index
+top10_london_tech = london_tech.loc[top10_london_index]
 
-# Stacked bar chart for top 10 boroughs
-# Remove Total column before plotting tech mix so that it isn't used as a tech type
-top10_london_tech = top10_london.drop(columns="Total")
+top10_london_plot = top10_london_tech.copy()
+
+top10_london_plot.index = (
+    top10_london_plot.index.get_level_values(
+        "local_authority"
+    )
+)
 
 fig, ax = plt.subplots(figsize=(14, 7))
 
-top10_london_tech.plot(kind="barh", stacked=True, ax=ax)
+top10_london_plot.iloc[::-1].plot( #iloc[::-1] reverses the row order so the highest-ranked borough appears at the top.
+    kind="barh",
+    stacked=True,
+    ax=ax,
+)
 
-ax.set_title("Technology Mix of Top 10 London Boroughs by LCT Connections")
+ax.set_title(
+    "Technology Mix of Top 10 London Boroughs by LCT Connections"
+)
 ax.set_xlabel("Total LCT Connections")
 ax.set_ylabel("London Borough")
 
 plt.tight_layout()
 plt.show()
+
 
 # Calculate %
 top10_london_share = (
@@ -250,12 +272,16 @@ print()
 # Looking at all London Boroughs:
 
 print("Leading London boroughs for each technology")
-london_tech = london_pivot.drop(columns="Total")
-
 absolute_leaders = london_tech.idxmax()
-absolute_values = london_tech.max()
+absolute_leader_names = absolute_leaders.apply(
+    lambda index_value: index_value[1]
+)
 
+print(absolute_leader_names)
+
+absolute_values = london_tech.max()
 print(absolute_leaders)
+
 print("Number of LCT connections in the leading boroughs")
 print(absolute_values)
 
@@ -387,27 +413,6 @@ demographics = population.merge(
     validate="one_to_one",
 )
 
-# print(demographics.head())
-# print(demographics.shape)
-# print(demographics.isna().sum())
-# print()
-# print(demographics.dtypes)
-
-# print()
-# print(
-#     demographics[
-#         demographics[
-#             [
-#                 "local_authority_code",
-#                 "local_authority",
-#                 "population",
-#                 "households",
-#             ]
-#         ].isna().any(axis=1)
-#     ]
-# )
-
-print()
 
 demographics = demographics.dropna(
     subset=[
@@ -418,26 +423,9 @@ demographics = demographics.dropna(
     ]
 ).copy()
 
-# print(demographics.shape)
-# print(demographics.isna().sum())
 
 london_analysis = london_tech.reset_index() # turns local authority from the index into a normal column
 
-# there is no local authority code in london_tech, creating a lookup from the original London data
-london_codes = (
-    london_lct[
-        ["local_authority", "local_authority_code"]
-    ]
-    .drop_duplicates()
-)
-
-# Merge into analysis table
-london_analysis = london_analysis.merge(
-    london_codes,
-    on="local_authority",
-    how="left",
-    validate="one_to_one",
-)
 
 # Merge in population and households 
 london_analysis = london_analysis.merge(
@@ -453,8 +441,20 @@ london_analysis = london_analysis.merge(
     validate="one_to_one",
 )
 
-print(london_analysis.head())
-print(london_analysis.isna().sum())
+print("\nVerification:")
+print(
+    london_analysis[
+        [
+            "local_authority_code",
+            "local_authority",
+            "population",
+            "households",
+        ]
+    ].head()
+)
+
+## Checking missing values
+# print(london_analysis.isna().sum())
 
 # Add total LCT connections
 technology_columns = london_tech.columns.tolist()
@@ -501,7 +501,7 @@ london_analysis["ev_per_1000_people"] = (
     * 1000
 )
 
-# Print top boroughs by raw total
+print("\ntop boroughs by raw total")
 print(
     london_analysis[
         ["local_authority", "total_lct"]
@@ -510,7 +510,7 @@ print(
     .head(10)
 )
 
-# Print top boroughs by household-normalised rate
+print("\ntop boroughs by household-normalised rate")
 print(
     london_analysis[
         [
