@@ -685,6 +685,8 @@ london_analysis["lct_per_1000_people"] = (
     / london_analysis["population"]
     * 1000
 )
+
+
 # ----------------------------------------------------
 # Total LCT connections per 1,000 households
 # ----------------------------------------------------
@@ -747,6 +749,25 @@ print(
     .sort_values("total_lct", ascending=False)
     .head(10)
 )
+# ----------------------------------------------------
+# Top ten boroughs by connections per 1,000 residents
+# ----------------------------------------------------
+# This ranking adjusts the total number of connections for the number of residents in each borough.
+print("\ntop boroughs by resident-normalised rate")
+print(
+    london_analysis[
+        [
+            "local_authority",
+            "lct_per_1000_people",
+        ]
+    ]
+    .sort_values(
+        "lct_per_1000_people",
+        ascending=False,
+    )
+    .head(10)
+)
+
 # ----------------------------------------------------
 # Top ten boroughs by connections per 1,000 households
 # ----------------------------------------------------
