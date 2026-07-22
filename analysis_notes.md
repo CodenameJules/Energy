@@ -1,7 +1,7 @@
 Observation 1: East Suffolk has the highest total LCT connections in the dataset, largely driven by Solar PV.
 
-Observation 2: Bromley has a comparatively high number of EV charging point connections relative to its total LCT mix.
----------------
+## Observation 2: Bromley has a comparatively high number of EV charging point connections relative to its total LCT mix.
+
 Looking at London Boroughs:
 
 1. Bromley has the highest total number of low-carbon technology connections among London boroughs in this dataset.
@@ -12,10 +12,12 @@ Looking at London Boroughs:
 
 4. Heat Pump connections appear relatively low across the top 10 London boroughs compared with EV Charging Points and Solar PV.
 
-----------------
+---
+
 Bromley leads London in absolute connections for several major technologies. Some boroughs show high technology shares, but these proportions should be interpreted alongside their total connection counts, as small totals can produce extreme percentages.
 
-------
+---
+
 Percentage comparisons were restricted to boroughs with at least 500 total LCT connections to reduce distortions caused by very small denominators.
 Among eligible boroughs:
 
